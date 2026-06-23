@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لقاء Liqaa — تسجيل الحضور</title>
+
+<!-- Firebase SDK (مجاني — راجع firebase-config.js) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<style>
+  :root{
+    --maroon:#7A1E26; --maroon-dark:#5A1219; --gold:#C9A24B; --gold-light:#F2E6C9;
+    --bg:#F7F5F0; --card:#ffffff; --border:#E3DCD0; --text:#241413; --text-soft:#7A6F66;
+    --success:#2F6B3A; --success-bg:#E6F1E8; --danger:#A32D2D; --danger-bg:#FCEBEB;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:"Segoe UI", Tahoma, Arial, sans-serif; background:var(--bg); color:var(--text);
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; direction:rtl; padding:20px;
+  }
+  .card{
+    background:var(--card); border-radius:20px; border:1px solid var(--border); padding:36px 30px;
+    max-width:420px; width:100%; box-shadow:0 4px 20px rgba(90,18,25,0.10); text-align:center;
+  }
+  .topStripe{height:7px; border-radius:8px; background:linear-gradient(90deg, var(--maroon), var(--gold)); margin-bottom:24px;}
+  .logo{
+    width:52px; height:52px; border-radius:14px; background:var(--gold); margin:0 auto 16px;
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--maroon-dark); font-size:20px;
+  }
+  h1{font-size:20px; font-weight:700; margin:0 0 4px; color:var(--maroon-dark);}
+  p.sub{font-size:13px; color:var(--text-soft); margin:0 0 26px;}
+  .field{text-align:right; margin-bottom:16px;}
+  .field label{font-size:13px; font-weight:700; color:var(--maroon-dark); display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; font-size:16px; padding:13px; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text);
+  }
+  .field input:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-light);}
+  button{
+    width:100%; font-size:16px; font-weight:700; padding:14px; border-radius:12px; border:none;
+    background:var(--maroon); color:#fff; cursor:pointer; margin-top:8px;
+  }
+  button:hover{background:var(--maroon-dark);}
+  button:disabled{opacity:0.6; cursor:not-allowed;}
+  .successBox{display:none; background:var(--success-bg); border-radius:14px; padding:24px; margin-top:10px;}
+  .successBox .icon{font-size:36px; color:var(--success); margin-bottom:8px;}
+  .successBox p{color:var(--success); font-weight:700; margin:0; font-size:15px;}
+  .errorMsg{color:var(--danger); font-size:13px; margin-top:10px; min-height:16px;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="topStripe"></div>
+  <div class="logo">L</div>
+  <h1>لقاء <span style="font-weight:400; font-size:14px; color:var(--text-soft);">Liqaa</span></h1>
+  <p class="sub">سجّل بياناتك للدخول في السحب</p>
+
+  <form id="regForm">
+    <div class="field">
+      <label>الاسم الكامل</label>
+      <input id="regName" type="text" placeholder="اكتب اسمك..." required autofocus>
+    </div>
+    <div class="field">
+      <label>الفرع</label>
+      <input id="regBranch" type="text" placeholder="اكتب اسم فرعك..." required>
+    </div>
+    <button type="submit" id="submitBtn">تسجيل الدخول في السحب</button>
+    <p class="errorMsg" id="errorMsg"></p>
+  </form>
+
+  <div class="successBox" id="successBox">
+    <div class="icon">✓</div>
+    <p>تم تسجيلك بنجاح! أنت الآن مشمول في السحب.</p>
+  </div>
+</div>
+
+<script>
+document.getElementById('regForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('regName').value.trim();
+  const branch = document.getElementById('regBranch').value.trim();
+  const errorMsg = document.getElementById('errorMsg');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if(!name || !branch){
+    errorMsg.textContent = 'الرجاء تعبئة الاسم والفرع';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'جاري التسجيل...';
+
+  const db = firebase.database();
+  const ref = db.ref('liqaa_checkins').push();
+  ref.set({
+    name: name,
+    branch: branch,
+    timestamp: Date.now()
+  }).then(function(){
+    document.getElementById('regForm').style.display = 'none';
+    document.getElementById('successBox').style.display = 'block';
+  }).catch(function(err){
+    errorMsg.textContent = 'حدث خطأ في الاتصال — تأكد من الإنترنت وحاول مجدداً';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'تسجيل الدخول في السحب';
+    console.error(err);
+  });
+});
+</script>
+
+</body>
+</html>

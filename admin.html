@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لقاء Liqaa — لوحة السحب</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<style>
+  :root{
+    --maroon:#7A1E26; --maroon-dark:#5A1219; --maroon-light:#9C3A41;
+    --gold:#C9A24B; --gold-light:#F2E6C9;
+    --bg:#F7F5F0; --card:#ffffff; --border:#E3DCD0; --text:#241413; --text-soft:#7A6F66;
+    --success:#2F6B3A; --success-bg:#E6F1E8;
+    --danger:#A32D2D; --danger-bg:#FCEBEB;
+    --warning:#8A6310; --warning-bg:#FBF1DC;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Segoe UI", Tahoma, Arial, sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; direction:rtl;}
+
+  .topbar{
+    background:linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+    color:#fff; padding:24px 36px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(90,18,25,0.18);
+  }
+  .topbar .brand{display:flex; align-items:center; gap:14px;}
+  .topbar .logo{
+    width:42px; height:42px; border-radius:10px; background:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--maroon-dark); font-size:18px;
+  }
+  .topbar h1{font-size:19px; margin:0; font-weight:600;}
+  .topbar .sub{font-size:12px; color:var(--gold-light); margin:2px 0 0; opacity:0.9;}
+  .topbar .liveBadge{
+    background:var(--gold); color:var(--maroon-dark); font-size:12px; font-weight:700;
+    padding:7px 16px; border-radius:20px; display:flex; align-items:center; gap:6px;
+  }
+  .liveDot{width:8px; height:8px; border-radius:50%; background:var(--maroon-dark); animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.3;}}
+
+  .wrap{max-width:1000px; margin:0 auto; padding:28px 24px; display:flex; flex-direction:column; gap:20px;}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center;}
+  .stat .n{font-size:28px; font-weight:800; color:var(--maroon-dark);}
+  .stat .l{font-size:12px; color:var(--text-soft); margin-top:4px; font-weight:600;}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px;}
+  .card .label{font-size:13px; color:var(--text-soft); margin:0 0 12px; font-weight:700;}
+
+  input[type=text].filter{width:100%; font-size:13px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:12px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{background:var(--gold-light); color:var(--maroon-dark); text-align:right; padding:10px 12px; font-weight:700; border-bottom:1px solid var(--gold);}
+  tbody td{padding:9px 12px; border-bottom:1px solid var(--border);}
+  .tableWrap{max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:10px;}
+  .badge{padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;}
+  .badge.present{background:#EEEDE6; color:var(--text-soft);}
+  .badge.winner{background:var(--success-bg); color:var(--success);}
+
+  button{font-size:14px; font-weight:700; padding:12px 22px; border-radius:10px; border:1px solid var(--border); background:#fff; color:var(--maroon-dark); cursor:pointer;}
+  button:hover{background:var(--gold-light); border-color:var(--gold);}
+  button.primary{background:var(--maroon); border-color:var(--maroon); color:#fff;}
+  button.primary:hover{background:var(--maroon-dark);}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .checkboxRow{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-soft); font-weight:600;}
+
+  .winnerBox{display:none; background:linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%); border-radius:16px; padding:28px; text-align:center; color:#fff;}
+  .winnerBox .t{font-size:13px; color:var(--gold-light); margin:0 0 8px; font-weight:700; letter-spacing:1px;}
+  .winnerBox .name{font-size:30px; font-weight:800; color:#fff; margin:0;}
+  .winnerBox .branch{font-size:14px; color:var(--gold-light); margin-top:8px; font-weight:600;}
+
+  .winnersLog{font-size:13px; margin:0; padding:0; list-style:none;}
+  .winnersLog li{padding:8px 4px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;}
+  .winnersLog li .n{font-weight:700; color:var(--maroon-dark);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">L</div>
+    <div>
+      <h1>لقاء Liqaa — لوحة السحب</h1>
+      <p class="sub">تحديث لحظي مع تسجيلات الهواتف</p>
+    </div>
+  </div>
+  <div class="liveBadge"><span class="liveDot"></span>مباشر</div>
+</div>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="presentCount">0</div><div class="l">الحاضرون المسجّلون</div></div>
+    <div class="stat"><div class="n" id="winnerCountStat">0</div><div class="l">الفائزون</div></div>
+    <div class="stat"><div class="n" id="branchCount">0</div><div class="l">عدد الفروع المشاركة</div></div>
+  </div>
+
+  <div class="card">
+    <p class="label">قائمة الحاضرين (تتحدّث تلقائياً لحظة تسجيل أي موظف من هاتفه)</p>
+    <input type="text" class="filter" id="filterBranch" placeholder="تصفية حسب الفرع...">
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>#</th><th>الاسم</th><th>الفرع</th><th>وقت التسجيل</th><th>الحالة</th></tr></thead>
+        <tbody id="presentBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">السحب العشوائي</p>
+    <input type="text" class="filter" id="drawBranchFilter" placeholder="سحب من فرع محدد فقط (اتركه فارغاً للسحب من الجميع)...">
+    <div class="row">
+      <button class="primary" id="drawBtn" style="flex:1;">سحب الفائز</button>
+      <label class="checkboxRow"><input type="checkbox" id="excludeWinners" checked style="width:auto;">استبعاد الفائزين السابقين</label>
+    </div>
+    <div class="winnerBox" id="winnerBox" style="margin-top:18px;">
+      <p class="t">الفائز</p>
+      <p class="name" id="winnerName"></p>
+      <p class="branch" id="winnerBranch"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">سجل الفائزين</p>
+    <ul class="winnersLog" id="winnersLog"></ul>
+    <div class="row" style="margin-top:14px;">
+      <button id="resetWinners">تصفير الفائزين</button>
+      <button id="resetAll">تصفير الكل (يحذف من قاعدة البيانات)</button>
+      <button id="exportBtn">تصدير الحاضرين CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const db = firebase.database();
+let present = {}; // id -> {name, branch, timestamp}
+let winners = []; // array of ids
+
+function renderPresent(){
+  const body = document.getElementById('presentBody');
+  body.innerHTML = '';
+  const filter = document.getElementById('filterBranch').value.trim().toLowerCase();
+  const ids = Object.keys(present).filter(id => !filter || present[id].branch.toLowerCase().includes(filter));
+  ids.sort((a,b)=> present[a].timestamp - present[b].timestamp);
+  ids.forEach((id,i)=>{
+    const isWinner = winners.includes(id);
+    const time = new Date(present[id].timestamp).toLocaleTimeString('ar-OM');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${present[id].name}</td><td>${present[id].branch}</td><td>${time}</td>
+      <td><span class="badge ${isWinner?'winner':'present'}">${isWinner?'فائز':'حاضر'}</span></td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById('presentCount').textContent = Object.keys(present).length;
+  document.getElementById('winnerCountStat').textContent = winners.length;
+  const branches = new Set(Object.values(present).map(p=>p.branch));
+  document.getElementById('branchCount').textContent = branches.size;
+  renderWinnersLog();
+}
+
+function renderWinnersLog(){
+  const log = document.getElementById('winnersLog');
+  log.innerHTML = '';
+  if(winners.length === 0){
+    log.innerHTML = '<li style="color:var(--text-soft); border-bottom:none;">لا يوجد فائزون بعد</li>';
+    return;
+  }
+  winners.forEach((id,i)=>{
+    const p = present[id];
+    const li = document.createElement('li');
+    li.innerHTML = `<span><span class="n">${i+1}.</span> ${p ? p.name : id}</span><span>${p ? p.branch : ''}</span>`;
+    log.appendChild(li);
+  });
+}
+
+// الاستماع لحظياً لقاعدة بيانات Firebase
+db.ref('liqaa_checkins').on('value', function(snapshot){
+  present = snapshot.val() || {};
+  renderPresent();
+});
+
+db.ref('liqaa_winners').on('value', function(snapshot){
+  const data = snapshot.val() || {};
+  winners = Object.values(data).map(w => w.checkinId);
+  renderPresent();
+});
+
+document.getElementById('filterBranch').addEventListener('input', renderPresent);
+
+document.getElementById('drawBtn').addEventListener('click', ()=>{
+  const branchFilter = document.getElementById('drawBranchFilter').value.trim().toLowerCase();
+  let pool = Object.keys(present);
+  if(branchFilter){
+    pool = pool.filter(id => present[id].branch.toLowerCase().includes(branchFilter));
+  }
+  if(document.getElementById('excludeWinners').checked){
+    pool = pool.filter(id => !winners.includes(id));
+  }
+  if(pool.length === 0){
+    alert('لا يوجد مرشحون متاحون للسحب');
+    return;
+  }
+  const winnerId = pool[Math.floor(Math.random()*pool.length)];
+  db.ref('liqaa_winners').push({
+    checkinId: winnerId,
+    name: present[winnerId].name,
+    branch: present[winnerId].branch,
+    timestamp: Date.now()
+  });
+  document.getElementById('winnerBox').style.display = 'block';
+  document.getElementById('winnerName').textContent = present[winnerId].name;
+  document.getElementById('winnerBranch').textContent = 'الفرع: ' + present[winnerId].branch;
+});
+
+document.getElementById('resetWinners').addEventListener('click', ()=>{
+  if(!confirm('تصفير قائمة الفائزين؟')) return;
+  db.ref('liqaa_winners').remove();
+  document.getElementById('winnerBox').style.display = 'none';
+});
+
+document.getElementById('resetAll').addEventListener('click', ()=>{
+  if(!confirm('تصفير الحضور والفائزين بالكامل من قاعدة البيانات؟ لا يمكن التراجع.')) return;
+  db.ref('liqaa_checkins').remove();
+  db.ref('liqaa_winners').remove();
+  document.getElementById('winnerBox').style.display = 'none';
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  let csv = 'الاسم,الفرع,وقت التسجيل,الحالة\n';
+  Object.keys(present).forEach(id=>{
+    const status = winners.includes(id) ? 'فائز' : 'حاضر';
+    const time = new Date(present[id].timestamp).toLocaleString('ar-OM');
+    csv += `${present[id].name},${present[id].branch},${time},${status}\n`;
+  });
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'قائمة_الحاضرين.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+
+</body>
+</html>
